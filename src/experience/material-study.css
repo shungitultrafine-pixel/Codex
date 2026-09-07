@@ -1,0 +1,7 @@
+.material-study { height: 100%; height: 100svh; isolation: isolate; overflow: hidden; width: 100%; }
+
+.material-study canvas { display: block; height: 100% !important; outline: none; touch-action: none; width: 100% !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .material-study canvas { touch-action: auto; }
+}
