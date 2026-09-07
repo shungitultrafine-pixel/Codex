@@ -4,9 +4,9 @@ import * as THREE from 'three'
 import './home-material-field.css'
 
 const MATERIAL_TEXTURE_URL = '/assets/home-material-crystal.png'
-const FAR_FRAGMENT_COUNT = 14
-const NEAR_FRAGMENT_COUNT = 9
-const BASE_CAMERA_Z = 6.4
+const FAR_FRAGMENT_COUNT = 16
+const NEAR_FRAGMENT_COUNT = 11
+const BASE_CAMERA_Z = 6.0
 
 const noiseGLSL = /* glsl */ `
   float hash(vec3 p) {
@@ -55,7 +55,7 @@ const materialVertexShader = /* glsl */ `
     float h = surface(p.xy);
     float hx = surface(p.xy + vec2(eps, 0.0));
     float hy = surface(p.xy + vec2(0.0, eps));
-    float amplitude = 0.005;
+    float amplitude = 0.006;
     p.z += h * amplitude;
     vec3 tangentX = normalize(vec3(eps, 0.0, (hx - h) * amplitude));
     vec3 tangentY = normalize(vec3(0.0, eps, (hy - h) * amplitude));
@@ -75,14 +75,14 @@ const materialFragmentShader = /* glsl */ `
     if (tex.a < 0.03) discard;
 
     vec3 normal = normalize(vNormal);
-    vec3 lightA = normalize(vec3(0.58 + sin(uTime * 0.04) * 0.1, 0.74, 0.56 + cos(uTime * 0.033) * 0.1));
+    vec3 lightA = normalize(vec3(0.58 + sin(uTime * 0.035) * 0.1, 0.74, 0.56 + cos(uTime * 0.029) * 0.1));
     vec3 lightB = normalize(vec3(-0.52, -0.2, -0.32));
     float key = max(dot(normal, lightA), 0.0);
     float fill = max(dot(normal, lightB), 0.0);
-    vec3 warm = vec3(1.1, 1.0, 0.86);
-    vec3 cool = vec3(0.82, 0.87, 0.98);
-    float breathe = 0.97 + 0.03 * sin(uTime * 0.02);
-    vec3 shade = vec3(0.66) + key * 0.34 * warm + fill * 0.12 * cool;
+    vec3 warm = vec3(1.12, 1.0, 0.84);
+    vec3 cool = vec3(0.8, 0.86, 0.99);
+    float breathe = 0.96 + 0.04 * sin(uTime * 0.017);
+    vec3 shade = vec3(0.62) + key * 0.38 * warm + fill * 0.13 * cool;
     vec3 color = tex.rgb * shade * breathe;
     gl_FragColor = vec4(color, tex.a);
   }
@@ -115,11 +115,11 @@ const fragmentFragmentShader = /* glsl */ `
 
   void main() {
     float d = distance(vUv, vec2(0.5));
-    float innerEdge = mix(0.16, -0.4, vBlur);
+    float innerEdge = mix(0.17, -0.45, vBlur);
     float mask = smoothstep(0.5, innerEdge, d);
-    float dimming = 1.0 - vBlur * 0.3;
-    vec3 fogColor = vec3(0.035, 0.045, 0.06);
-    vec3 color = mix(vTint, fogColor, vBlur * 0.55);
+    float dimming = 1.0 - vBlur * 0.32;
+    vec3 fogColor = vec3(0.03, 0.04, 0.055);
+    vec3 color = mix(vTint, fogColor, vBlur * 0.6);
     if (mask <= 0.001 || vOpacity <= 0.001) discard;
     gl_FragColor = vec4(color, mask * vOpacity * dimming);
   }
@@ -193,27 +193,45 @@ function MaterialPlane({ texture }: { texture: THREE.Texture }) {
   const textureAspect = image.width / image.height
   const [planeWidth, planeHeight] = useContainScale(textureAspect)
   const uniforms = useMemo(() => ({ uMap: { value: texture }, uTime: { value: 0 } }), [texture])
+  const group = useRef<THREE.Group>(null)
 
   useFrame(({ clock }) => {
-    uniforms.uTime.value = clock.getElapsedTime()
+    const t = clock.getElapsedTime()
+    uniforms.uTime.value = t
+
+    if (!group.current) return
+    const targetX = Math.sin(t * 0.023) * 0.045 + Math.sin(t * 0.011) * 0.022
+    const targetY = Math.cos(t * 0.019) * 0.032
+    const targetRotZ = Math.sin(t * 0.015) * 0.012
+    const targetRotX = Math.cos(t * 0.0127) * 0.008
+    const targetRotY = Math.sin(t * 0.0091) * 0.006
+    const settle = 0.01
+    group.current.position.x += (targetX - group.current.position.x) * settle
+    group.current.position.y += (targetY - group.current.position.y) * settle
+    group.current.rotation.z += (targetRotZ - group.current.rotation.z) * settle
+    group.current.rotation.x += (targetRotX - group.current.rotation.x) * settle
+    group.current.rotation.y += (targetRotY - group.current.rotation.y) * settle
   })
 
   return (
-    <mesh scale={[planeWidth, planeHeight, 1]}>
-      <planeGeometry args={[1, 1, 160, 160]} />
-      <shaderMaterial
-        fragmentShader={materialFragmentShader}
-        transparent
-        uniforms={uniforms}
-        vertexShader={materialVertexShader}
-      />
-    </mesh>
+    <group ref={group}>
+      <mesh scale={[planeWidth, planeHeight, 1]}>
+        <planeGeometry args={[1, 1, 160, 160]} />
+        <shaderMaterial
+          fragmentShader={materialFragmentShader}
+          transparent
+          uniforms={uniforms}
+          vertexShader={materialVertexShader}
+        />
+      </mesh>
+    </group>
   )
 }
 
 type FragmentBandConfig = {
   zBase: number
   zJitter: number
+  zWobble: number
   scatterMin: number
   scatterMax: number
   travelMin: number
@@ -250,6 +268,7 @@ function FragmentField({
         wobbleFreq: 0.4 + ((index * 29) % 5) * 0.2,
         scatter: config.scatterMin + ((index * 61) % 9) * ((config.scatterMax - config.scatterMin) / 9),
         zOffset: config.zBase + (((index * 71) % 13) / 12 - 0.5) * 2 * config.zJitter,
+        zPhase: ((index * 83) % 17) / 17,
         size: config.sizeMin + ((index * 41) % 9) * ((config.sizeMax - config.sizeMin) / 9),
       })),
     [anchors, config],
@@ -290,7 +309,7 @@ function FragmentField({
       const baseY = anchor.y * seed.scatter
       const worldX = (baseX + dirX * seed.travel * eased - dirY * wobble) * planeWidth
       const worldY = (baseY + dirY * seed.travel * eased + dirX * wobble) * planeHeight
-      const worldZ = seed.zOffset + Math.sin(t * seed.wobbleFreq * 0.6 + seed.phase * 4.2) * 0.06
+      const worldZ = seed.zOffset + Math.sin(t * seed.wobbleFreq * 0.5 + seed.zPhase * 6.28) * config.zWobble
 
       const envelope = 0.4 + 0.6 * Math.sin(Math.PI * age)
       opacityAttr[index] = Math.max(envelope, 0) * config.opacityMax
@@ -332,46 +351,48 @@ function FragmentField({
 }
 
 const FAR_BAND: FragmentBandConfig = {
-  zBase: -2.6,
-  zJitter: 0.9,
-  scatterMin: 1.5,
-  scatterMax: 2.8,
-  travelMin: 0.03,
-  travelMax: 0.07,
-  speedMin: 0.015,
-  speedMax: 0.03,
-  sizeMin: 0.024,
-  sizeMax: 0.052,
-  opacityMax: 0.26,
-  blurBias: 0.45,
-  focusRange: 2.2,
+  zBase: -3.2,
+  zJitter: 1.1,
+  zWobble: 0.05,
+  scatterMin: 1.6,
+  scatterMax: 3.2,
+  travelMin: 0.02,
+  travelMax: 0.05,
+  speedMin: 0.012,
+  speedMax: 0.025,
+  sizeMin: 0.03,
+  sizeMax: 0.07,
+  opacityMax: 0.22,
+  blurBias: 0.5,
+  focusRange: 3.0,
 }
 
 const NEAR_BAND: FragmentBandConfig = {
-  zBase: 0.95,
-  zJitter: 0.4,
+  zBase: 1.15,
+  zJitter: 0.5,
+  zWobble: 0.14,
   scatterMin: 1.0,
-  scatterMax: 1.35,
-  travelMin: 0.05,
-  travelMax: 0.12,
-  speedMin: 0.02,
-  speedMax: 0.045,
-  sizeMin: 0.012,
-  sizeMax: 0.026,
-  opacityMax: 0.5,
-  blurBias: 0.05,
-  focusRange: 1.6,
+  scatterMax: 1.4,
+  travelMin: 0.04,
+  travelMax: 0.1,
+  speedMin: 0.018,
+  speedMax: 0.04,
+  sizeMin: 0.014,
+  sizeMax: 0.03,
+  opacityMax: 0.48,
+  blurBias: 0.03,
+  focusRange: 1.9,
 }
 
 function CameraRig() {
   useFrame(({ clock, camera }) => {
     const t = clock.getElapsedTime()
-    const targetX = Math.sin(t * 0.045) * 0.34
-    const targetY = Math.cos(t * 0.035) * 0.2
-    const targetZ = BASE_CAMERA_Z + Math.sin(t * 0.021) * 0.85
-    camera.position.x += (targetX - camera.position.x) * 0.012
-    camera.position.y += (targetY - camera.position.y) * 0.012
-    camera.position.z += (targetZ - camera.position.z) * 0.012
+    const targetX = Math.sin(t * 0.05) * 0.5 + Math.sin(t * 0.0083) * 0.16
+    const targetY = Math.cos(t * 0.038) * 0.28
+    const targetZ = BASE_CAMERA_Z + Math.sin(t * 0.024) * 1.1
+    camera.position.x += (targetX - camera.position.x) * 0.015
+    camera.position.y += (targetY - camera.position.y) * 0.015
+    camera.position.z += (targetZ - camera.position.z) * 0.015
     camera.lookAt(0, 0, 0)
   })
   return null
@@ -414,7 +435,7 @@ export function HomeMaterialField() {
   return (
     <div className="home-material-field" ref={containerRef}>
       <Canvas
-        camera={{ fov: 34, position: [0, 0, BASE_CAMERA_Z] }}
+        camera={{ fov: 36, position: [0, 0, BASE_CAMERA_Z] }}
         dpr={[1, 2]}
         frameloop={active ? 'always' : 'never'}
         gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}

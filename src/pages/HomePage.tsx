@@ -23,7 +23,10 @@ export function HomePage() {
   return (
     <section aria-label="MicronHub" className="home-page">
       <div aria-label="Primary navigation" className="home-page__header">
-        <a aria-label="MicronHub home" className="home-page__wordmark" href="/">MicronHub</a>
+        <div className="home-page__brand">
+          <a aria-label="MicronHub home" className="home-page__wordmark" href="/">MicronHub</a>
+          <span className="home-page__tagline">Particle Engineering</span>
+        </div>
         <nav className="home-page__navigation">
           <a href="/technology">Technology</a>
           <a href="/applications">Applications</a>
@@ -47,11 +50,11 @@ export function HomePage() {
       </div>
 
       <nav aria-label="Applications" className="home-page__applications">
-        <a href="/water">Water</a>
-        <a href="/applications">Rubber</a>
-        <a href="/applications">Ceramics</a>
-        <a href="/applications">Rare Earth</a>
-        <a href="/applications">Emerging Applications</a>
+        <a className="home-page__applications-link home-page__applications-link--water" href="/water">Water</a>
+        <a className="home-page__applications-link home-page__applications-link--rubber" href="/applications">Rubber</a>
+        <a className="home-page__applications-link home-page__applications-link--ceramics" href="/applications">Ceramics</a>
+        <a className="home-page__applications-link home-page__applications-link--rare-earth" href="/applications">Rare Earth</a>
+        <a className="home-page__applications-link home-page__applications-link--emerging" href="/applications">Emerging Applications</a>
       </nav>
 
       <div aria-hidden="true" className="home-page__scroll">

@@ -2,10 +2,8 @@
   --ink: #f2efe6;
   --muted: #97a0a6;
   background:
-    radial-gradient(circle at 71% 27%, rgba(255, 205, 140, 0.16) 0%, transparent 38%),
-    radial-gradient(ellipse at 68% 40%, rgba(88, 84, 74, 0.4), transparent 46%),
-    radial-gradient(ellipse at 20% 85%, rgba(40, 52, 60, 0.5), transparent 55%),
-    linear-gradient(160deg, #05070a 0%, #0a0e13 45%, #12171d 100%);
+    radial-gradient(circle at 72% 29%, rgba(255, 200, 135, 0.13) 0%, transparent 40%),
+    linear-gradient(165deg, #030405 0%, #07090c 48%, #0d1116 100%);
   color: var(--ink);
   min-height: 100svh;
   overflow: hidden;
@@ -49,11 +47,22 @@
   top: clamp(1.4rem, 3.8vw, 2.7rem);
 }
 
+.home-page__brand { display: flex; flex-direction: column; gap: 0.4rem; }
+
 .home-page__wordmark {
   color: var(--ink);
   font-size: clamp(0.8rem, 1.16vw, 1.12rem);
   font-weight: 600;
   letter-spacing: 0.27em;
+  text-transform: uppercase;
+}
+
+.home-page__tagline {
+  color: var(--muted);
+  font-size: clamp(0.5rem, 0.56vw, 0.6rem);
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  opacity: 0.75;
   text-transform: uppercase;
 }
 
@@ -152,7 +161,12 @@
 }
 
 .home-page__applications a { min-width: max-content; padding-bottom: 1rem; position: relative; }
-.home-page__applications a::after { background: currentColor; bottom: 0; content: ''; height: 1px; left: 0; opacity: 0.6; position: absolute; width: 72%; }
+.home-page__applications-link::after { background: currentColor; bottom: 0; content: ''; height: 1px; left: 0; opacity: 0.6; position: absolute; width: 72%; }
+
+.home-page__applications-link--water::after { background: #5fd0e4; opacity: 0.85; }
+.home-page__applications-link--rubber::after { background: #7cd192; opacity: 0.85; }
+.home-page__applications-link--ceramics::after { background: #e0b366; opacity: 0.85; }
+.home-page__applications-link--rare-earth::after { background: #ac8fe6; opacity: 0.85; }
 
 .home-page__scroll { align-items: center; display: flex; flex-direction: column; gap: 0.85rem; right: clamp(1.5rem, 4.45vw, 4.3rem); top: 43%; }
 .home-page__scroll span { background: currentColor; height: 2.25rem; opacity: 0.5; width: 1px; }
