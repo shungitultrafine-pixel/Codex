@@ -3,8 +3,8 @@ import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import './home-material-field.css'
 
-const MATERIAL_TEXTURE_URL = '/assets/home-material.png'
-const PARTICLE_COUNT = 42
+const MATERIAL_TEXTURE_URL = '/assets/home-material-crystal.png'
+const PARTICLE_COUNT = 20
 
 const noiseGLSL = /* glsl */ `
   float hash(vec3 p) {
@@ -43,7 +43,7 @@ const materialVertexShader = /* glsl */ `
   ${noiseGLSL}
 
   float surface(vec2 p) {
-    return fbm(vec3(p * 3.1, uTime * 0.045)) - 0.5;
+    return fbm(vec3(p * 2.2, uTime * 0.028)) - 0.5;
   }
 
   void main() {
@@ -53,7 +53,7 @@ const materialVertexShader = /* glsl */ `
     float h = surface(p.xy);
     float hx = surface(p.xy + vec2(eps, 0.0));
     float hy = surface(p.xy + vec2(0.0, eps));
-    float amplitude = 0.035;
+    float amplitude = 0.010;
     p.z += h * amplitude;
     vec3 tangentX = normalize(vec3(eps, 0.0, (hx - h) * amplitude));
     vec3 tangentY = normalize(vec3(0.0, eps, (hy - h) * amplitude));
@@ -73,11 +73,13 @@ const materialFragmentShader = /* glsl */ `
     if (tex.a < 0.03) discard;
 
     vec3 normal = normalize(vNormal);
-    vec3 lightA = normalize(vec3(sin(uTime * 0.05) * 0.6 - 0.45, 0.68, 0.82));
-    vec3 lightB = normalize(vec3(0.55, -0.2 + cos(uTime * 0.04) * 0.18, -0.4));
+    vec3 lightA = normalize(vec3(0.55 + sin(uTime * 0.045) * 0.12, 0.72, 0.6 + cos(uTime * 0.037) * 0.1));
+    vec3 lightB = normalize(vec3(-0.5, -0.15, -0.35));
     float key = max(dot(normal, lightA), 0.0);
     float fill = max(dot(normal, lightB), 0.0);
-    float shade = 0.82 + key * 0.28 + fill * 0.16;
+    vec3 warm = vec3(1.06, 0.99, 0.9);
+    vec3 cool = vec3(0.94, 0.97, 1.03);
+    vec3 shade = vec3(0.86) + key * 0.24 * warm + fill * 0.1 * cool;
     vec3 color = tex.rgb * shade;
     gl_FragColor = vec4(color, tex.a);
   }
@@ -85,14 +87,17 @@ const materialFragmentShader = /* glsl */ `
 
 const particleVertexShader = /* glsl */ `
   attribute float aOpacity;
+  attribute float aBlur;
   attribute vec3 aTint;
   varying float vOpacity;
+  varying float vBlur;
   varying vec3 vTint;
   varying vec2 vUv;
 
   void main() {
     vUv = uv;
     vOpacity = aOpacity;
+    vBlur = aBlur;
     vTint = aTint;
     vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mvPosition;
@@ -101,14 +106,17 @@ const particleVertexShader = /* glsl */ `
 
 const particleFragmentShader = /* glsl */ `
   varying float vOpacity;
+  varying float vBlur;
   varying vec3 vTint;
   varying vec2 vUv;
 
   void main() {
     float d = distance(vUv, vec2(0.5));
-    float mask = smoothstep(0.5, 0.15, d);
+    float innerEdge = mix(0.17, -0.18, vBlur);
+    float mask = smoothstep(0.5, innerEdge, d);
+    float dimming = 1.0 - vBlur * 0.35;
     if (mask <= 0.001 || vOpacity <= 0.001) discard;
-    gl_FragColor = vec4(vTint, mask * vOpacity);
+    gl_FragColor = vec4(vTint, mask * vOpacity * dimming);
   }
 `
 
@@ -205,17 +213,24 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
     () =>
       anchors.map((_, index) => ({
         phase: (index / Math.max(anchors.length, 1)) * 1.0,
-        speed: 0.05 + ((index * 37) % 11) / 90,
-        travel: 0.22 + ((index * 53) % 17) / 60,
-        wobble: 0.04 + ((index * 19) % 7) / 90,
-        wobbleFreq: 0.6 + ((index * 29) % 5) * 0.3,
+        speed: 0.035 + ((index * 37) % 11) / 140,
+        travel: 0.045 + ((index * 53) % 17) / 260,
+        wobble: 0.02 + ((index * 19) % 7) / 160,
+        wobbleFreq: 0.5 + ((index * 29) % 5) * 0.24,
         depth: ((index * 71) % 13) / 12 - 0.5,
-        size: 0.012 + ((index * 41) % 9) / 900,
+        size: 0.009 + ((index * 41) % 9) / 1100,
       })),
     [anchors],
   )
 
   const opacityAttr = useMemo(() => new Float32Array(anchors.length), [anchors.length])
+  const blurAttr = useMemo(() => {
+    const arr = new Float32Array(anchors.length)
+    anchors.forEach((_, index) => {
+      arr[index] = Math.min(Math.abs(seeds[index].depth) / 0.5, 1)
+    })
+    return arr
+  }, [anchors, seeds])
   const tintAttr = useMemo(() => {
     const arr = new Float32Array(anchors.length * 3)
     anchors.forEach((anchor, index) => {
@@ -246,7 +261,7 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
       const worldZ = seed.depth * 0.6 + eased * 0.25
 
       const envelope = Math.sin(Math.PI * age)
-      opacityAttr[index] = Math.max(envelope, 0) * 0.6
+      opacityAttr[index] = Math.max(envelope, 0) * 0.42
 
       const scale = seed.size * (0.7 + eased * 0.5)
       matrix.compose(
@@ -267,6 +282,7 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
     <instancedMesh ref={mesh} args={[undefined, undefined, anchors.length]}>
       <planeGeometry args={[1, 1]}>
         <instancedBufferAttribute attach="attributes-aOpacity" args={[opacityAttr, 1]} />
+        <instancedBufferAttribute attach="attributes-aBlur" args={[blurAttr, 1]} />
         <instancedBufferAttribute attach="attributes-aTint" args={[tintAttr, 3]} />
       </planeGeometry>
       <shaderMaterial
@@ -282,12 +298,12 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
 function CameraRig() {
   useFrame(({ clock, camera }) => {
     const t = clock.getElapsedTime()
-    const targetX = Math.sin(t * 0.11) * 0.14
-    const targetY = Math.cos(t * 0.09) * 0.09
-    const targetZ = 5 + Math.sin(t * 0.07) * 0.2
-    camera.position.x += (targetX - camera.position.x) * 0.02
-    camera.position.y += (targetY - camera.position.y) * 0.02
-    camera.position.z += (targetZ - camera.position.z) * 0.02
+    const targetX = Math.sin(t * 0.07) * 0.16
+    const targetY = Math.cos(t * 0.055) * 0.1
+    const targetZ = 5 + Math.sin(t * 0.033) * 0.42
+    camera.position.x += (targetX - camera.position.x) * 0.015
+    camera.position.y += (targetY - camera.position.y) * 0.015
+    camera.position.z += (targetZ - camera.position.z) * 0.015
     camera.lookAt(0, 0, 0)
   })
   return null

@@ -34,7 +34,7 @@ export function HomePage() {
 
       <div aria-hidden="true" className="home-page__material">
         <div className="home-page__material-image">
-          {reducedMotion ? <img alt="" src="/assets/home-material.png" /> : <HomeMaterialField />}
+          {reducedMotion ? <img alt="" src="/assets/home-material-crystal.png" /> : <HomeMaterialField />}
         </div>
       </div>
 
