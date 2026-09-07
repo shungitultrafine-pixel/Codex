@@ -1,10 +1,11 @@
 .home-page {
-  --ink: #25282a;
-  --muted: #5d6263;
+  --ink: #f2efe6;
+  --muted: #97a0a6;
   background:
-    radial-gradient(circle at 58% 42%, rgba(250, 248, 241, 0.95) 0 12%, rgba(238, 236, 230, 0) 40%),
-    radial-gradient(ellipse at 72% 82%, rgba(191, 196, 195, 0.35), transparent 44%),
-    linear-gradient(112deg, #cfd5d5 0%, #e6e4df 45%, #efebe4 100%);
+    radial-gradient(circle at 71% 27%, rgba(255, 205, 140, 0.16) 0%, transparent 38%),
+    radial-gradient(ellipse at 68% 40%, rgba(88, 84, 74, 0.4), transparent 46%),
+    radial-gradient(ellipse at 20% 85%, rgba(40, 52, 60, 0.5), transparent 55%),
+    linear-gradient(160deg, #05070a 0%, #0a0e13 45%, #12171d 100%);
   color: var(--ink);
   min-height: 100svh;
   overflow: hidden;
@@ -12,11 +13,26 @@
 }
 
 .home-page::after {
-  background: linear-gradient(180deg, transparent 63%, rgba(255, 254, 250, 0.18));
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.45) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, transparent 30%, transparent 68%, rgba(0, 0, 0, 0.4) 100%);
   content: '';
   inset: 0;
   pointer-events: none;
   position: absolute;
+}
+
+.home-page__glow {
+  background: radial-gradient(circle, rgba(255, 197, 138, 0.22), transparent 62%);
+  filter: blur(2.5rem);
+  height: 46%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  position: absolute;
+  right: 6%;
+  top: 4%;
+  width: 40%;
+  z-index: 1;
 }
 
 .home-page__header,
@@ -58,7 +74,7 @@
 
 .home-page__menu {
   align-items: center;
-  border: 1px solid rgba(38, 40, 40, 0.6);
+  border: 1px solid rgba(242, 239, 230, 0.4);
   border-radius: 999px;
   display: grid;
   height: 1.85rem;
@@ -90,7 +106,7 @@
 
 .home-page__material-image img {
   display: block;
-  filter: drop-shadow(0 1.4rem 1.7rem rgba(59, 62, 59, 0.18));
+  filter: drop-shadow(0 0 3.4rem rgba(255, 197, 138, 0.14)) drop-shadow(0 1.6rem 2.2rem rgba(0, 0, 0, 0.55));
   height: 100%;
   max-height: 100%;
   max-width: 100%;
@@ -107,12 +123,15 @@
 .home-page__rule { background: var(--ink); display: block; height: 1px; margin-bottom: clamp(1.45rem, 2.4vw, 2.2rem); opacity: 0.72; width: 2.3rem; }
 
 .home-page h1 {
+  color: rgba(242, 239, 230, 0.62);
   font-size: clamp(2.25rem, 3.2vw, 4rem);
   font-weight: 300;
   letter-spacing: 0.095em;
   line-height: 1.14;
   margin: 0;
 }
+
+.home-page__emphasis { color: var(--ink); font-weight: 600; }
 
 .home-page__copy p {
   color: var(--muted);

@@ -2,7 +2,7 @@
 
 .home-material-field canvas {
   display: block;
-  filter: drop-shadow(0 1.4rem 1.7rem rgba(59, 62, 59, 0.18));
+  filter: drop-shadow(0 0 3.4rem rgba(255, 197, 138, 0.14)) drop-shadow(0 1.6rem 2.2rem rgba(0, 0, 0, 0.55));
   height: 100% !important;
   outline: none;
   width: 100% !important;

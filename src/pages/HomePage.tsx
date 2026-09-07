@@ -32,6 +32,8 @@ export function HomePage() {
         </nav>
       </div>
 
+      <div aria-hidden="true" className="home-page__glow" />
+
       <div aria-hidden="true" className="home-page__material">
         <div className="home-page__material-image">
           {reducedMotion ? <img alt="" src="/assets/home-material-crystal.png" /> : <HomeMaterialField />}
@@ -40,7 +42,7 @@ export function HomePage() {
 
       <div className="home-page__copy">
         <span aria-hidden="true" className="home-page__rule" />
-        <h1>ONE TECHNOLOGY<br />PLATFORM. MANY ENGINEERED<br />OUTCOMES.</h1>
+        <h1><span className="home-page__emphasis">ONE</span> TECHNOLOGY<br />PLATFORM. <span className="home-page__emphasis">MANY</span> ENGINEERED<br />OUTCOMES.</h1>
         <p>We engineer the particle state the next process step requires.</p>
       </div>
 

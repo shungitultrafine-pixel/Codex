@@ -4,7 +4,9 @@ import * as THREE from 'three'
 import './home-material-field.css'
 
 const MATERIAL_TEXTURE_URL = '/assets/home-material-crystal.png'
-const PARTICLE_COUNT = 20
+const FAR_FRAGMENT_COUNT = 14
+const NEAR_FRAGMENT_COUNT = 9
+const BASE_CAMERA_Z = 6.4
 
 const noiseGLSL = /* glsl */ `
   float hash(vec3 p) {
@@ -43,7 +45,7 @@ const materialVertexShader = /* glsl */ `
   ${noiseGLSL}
 
   float surface(vec2 p) {
-    return fbm(vec3(p * 2.2, uTime * 0.028)) - 0.5;
+    return fbm(vec3(p * 1.8, uTime * 0.02)) - 0.5;
   }
 
   void main() {
@@ -53,7 +55,7 @@ const materialVertexShader = /* glsl */ `
     float h = surface(p.xy);
     float hx = surface(p.xy + vec2(eps, 0.0));
     float hy = surface(p.xy + vec2(0.0, eps));
-    float amplitude = 0.010;
+    float amplitude = 0.005;
     p.z += h * amplitude;
     vec3 tangentX = normalize(vec3(eps, 0.0, (hx - h) * amplitude));
     vec3 tangentY = normalize(vec3(0.0, eps, (hy - h) * amplitude));
@@ -73,19 +75,20 @@ const materialFragmentShader = /* glsl */ `
     if (tex.a < 0.03) discard;
 
     vec3 normal = normalize(vNormal);
-    vec3 lightA = normalize(vec3(0.55 + sin(uTime * 0.045) * 0.12, 0.72, 0.6 + cos(uTime * 0.037) * 0.1));
-    vec3 lightB = normalize(vec3(-0.5, -0.15, -0.35));
+    vec3 lightA = normalize(vec3(0.58 + sin(uTime * 0.04) * 0.1, 0.74, 0.56 + cos(uTime * 0.033) * 0.1));
+    vec3 lightB = normalize(vec3(-0.52, -0.2, -0.32));
     float key = max(dot(normal, lightA), 0.0);
     float fill = max(dot(normal, lightB), 0.0);
-    vec3 warm = vec3(1.06, 0.99, 0.9);
-    vec3 cool = vec3(0.94, 0.97, 1.03);
-    vec3 shade = vec3(0.86) + key * 0.24 * warm + fill * 0.1 * cool;
-    vec3 color = tex.rgb * shade;
+    vec3 warm = vec3(1.1, 1.0, 0.86);
+    vec3 cool = vec3(0.82, 0.87, 0.98);
+    float breathe = 0.97 + 0.03 * sin(uTime * 0.02);
+    vec3 shade = vec3(0.66) + key * 0.34 * warm + fill * 0.12 * cool;
+    vec3 color = tex.rgb * shade * breathe;
     gl_FragColor = vec4(color, tex.a);
   }
 `
 
-const particleVertexShader = /* glsl */ `
+const fragmentVertexShader = /* glsl */ `
   attribute float aOpacity;
   attribute float aBlur;
   attribute vec3 aTint;
@@ -104,7 +107,7 @@ const particleVertexShader = /* glsl */ `
   }
 `
 
-const particleFragmentShader = /* glsl */ `
+const fragmentFragmentShader = /* glsl */ `
   varying float vOpacity;
   varying float vBlur;
   varying vec3 vTint;
@@ -112,11 +115,13 @@ const particleFragmentShader = /* glsl */ `
 
   void main() {
     float d = distance(vUv, vec2(0.5));
-    float innerEdge = mix(0.17, -0.18, vBlur);
+    float innerEdge = mix(0.16, -0.4, vBlur);
     float mask = smoothstep(0.5, innerEdge, d);
-    float dimming = 1.0 - vBlur * 0.35;
+    float dimming = 1.0 - vBlur * 0.3;
+    vec3 fogColor = vec3(0.035, 0.045, 0.06);
+    vec3 color = mix(vTint, fogColor, vBlur * 0.55);
     if (mask <= 0.001 || vOpacity <= 0.001) discard;
-    gl_FragColor = vec4(vTint, mask * vOpacity * dimming);
+    gl_FragColor = vec4(color, mask * vOpacity * dimming);
   }
 `
 
@@ -175,10 +180,10 @@ function useContainScale(textureAspect: number) {
   return useMemo(() => {
     const containerAspect = viewport.width / viewport.height
     if (containerAspect > textureAspect) {
-      const height = viewport.height * 0.86
+      const height = viewport.height * 0.8
       return [height * textureAspect, height] as const
     }
-    const width = viewport.width * 0.86
+    const width = viewport.width * 0.8
     return [width, width / textureAspect] as const
   }, [viewport.width, viewport.height, textureAspect])
 }
@@ -206,31 +211,52 @@ function MaterialPlane({ texture }: { texture: THREE.Texture }) {
   )
 }
 
-function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]; planeWidth: number; planeHeight: number }) {
+type FragmentBandConfig = {
+  zBase: number
+  zJitter: number
+  scatterMin: number
+  scatterMax: number
+  travelMin: number
+  travelMax: number
+  speedMin: number
+  speedMax: number
+  sizeMin: number
+  sizeMax: number
+  opacityMax: number
+  blurBias: number
+  focusRange: number
+}
+
+function FragmentField({
+  anchors,
+  planeWidth,
+  planeHeight,
+  config,
+}: {
+  anchors: Anchor[]
+  planeWidth: number
+  planeHeight: number
+  config: FragmentBandConfig
+}) {
   const mesh = useRef<THREE.InstancedMesh>(null)
 
   const seeds = useMemo(
     () =>
       anchors.map((_, index) => ({
         phase: (index / Math.max(anchors.length, 1)) * 1.0,
-        speed: 0.035 + ((index * 37) % 11) / 140,
-        travel: 0.045 + ((index * 53) % 17) / 260,
+        speed: config.speedMin + ((index * 37) % 11) * ((config.speedMax - config.speedMin) / 11),
+        travel: config.travelMin + ((index * 53) % 17) * ((config.travelMax - config.travelMin) / 17),
         wobble: 0.02 + ((index * 19) % 7) / 160,
-        wobbleFreq: 0.5 + ((index * 29) % 5) * 0.24,
-        depth: ((index * 71) % 13) / 12 - 0.5,
-        size: 0.009 + ((index * 41) % 9) / 1100,
+        wobbleFreq: 0.4 + ((index * 29) % 5) * 0.2,
+        scatter: config.scatterMin + ((index * 61) % 9) * ((config.scatterMax - config.scatterMin) / 9),
+        zOffset: config.zBase + (((index * 71) % 13) / 12 - 0.5) * 2 * config.zJitter,
+        size: config.sizeMin + ((index * 41) % 9) * ((config.sizeMax - config.sizeMin) / 9),
       })),
-    [anchors],
+    [anchors, config],
   )
 
   const opacityAttr = useMemo(() => new Float32Array(anchors.length), [anchors.length])
-  const blurAttr = useMemo(() => {
-    const arr = new Float32Array(anchors.length)
-    anchors.forEach((_, index) => {
-      arr[index] = Math.min(Math.abs(seeds[index].depth) / 0.5, 1)
-    })
-    return arr
-  }, [anchors, seeds])
+  const blurAttr = useMemo(() => new Float32Array(anchors.length), [anchors.length])
   const tintAttr = useMemo(() => {
     const arr = new Float32Array(anchors.length * 3)
     anchors.forEach((anchor, index) => {
@@ -241,11 +267,15 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
     return arr
   }, [anchors])
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     if (!mesh.current) return
     const t = clock.getElapsedTime()
     const matrix = new THREE.Matrix4()
-    const opacity = mesh.current.geometry.attributes.aOpacity as THREE.BufferAttribute | undefined
+    const opacityAttribute = mesh.current.geometry.attributes.aOpacity as THREE.BufferAttribute | undefined
+    const blurAttribute = mesh.current.geometry.attributes.aBlur as THREE.BufferAttribute | undefined
+
+    const cameraDrift = camera.position.z - BASE_CAMERA_Z
+    const dynamicFocusRange = Math.max(config.focusRange - cameraDrift * 0.5, 0.35)
 
     anchors.forEach((anchor, index) => {
       const seed = seeds[index]
@@ -256,14 +286,19 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
       const dirY = anchor.y / dirLength
       const wobble = Math.sin(t * seed.wobbleFreq + seed.phase * 6.28) * seed.wobble * eased
 
-      const worldX = (anchor.x + dirX * seed.travel * eased - dirY * wobble) * planeWidth
-      const worldY = (anchor.y + dirY * seed.travel * eased + dirX * wobble) * planeHeight
-      const worldZ = seed.depth * 0.6 + eased * 0.25
+      const baseX = anchor.x * seed.scatter
+      const baseY = anchor.y * seed.scatter
+      const worldX = (baseX + dirX * seed.travel * eased - dirY * wobble) * planeWidth
+      const worldY = (baseY + dirY * seed.travel * eased + dirX * wobble) * planeHeight
+      const worldZ = seed.zOffset + Math.sin(t * seed.wobbleFreq * 0.6 + seed.phase * 4.2) * 0.06
 
-      const envelope = Math.sin(Math.PI * age)
-      opacityAttr[index] = Math.max(envelope, 0) * 0.42
+      const envelope = 0.4 + 0.6 * Math.sin(Math.PI * age)
+      opacityAttr[index] = Math.max(envelope, 0) * config.opacityMax
 
-      const scale = seed.size * (0.7 + eased * 0.5)
+      const dofBlur = Math.min(Math.abs(worldZ) / dynamicFocusRange, 1)
+      blurAttr[index] = Math.min(config.blurBias + dofBlur * (1 - config.blurBias), 1)
+
+      const scale = seed.size * (0.75 + eased * 0.35)
       matrix.compose(
         new THREE.Vector3(worldX, worldY, worldZ),
         new THREE.Quaternion(),
@@ -273,7 +308,8 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
     })
 
     mesh.current.instanceMatrix.needsUpdate = true
-    if (opacity) opacity.needsUpdate = true
+    if (opacityAttribute) opacityAttribute.needsUpdate = true
+    if (blurAttribute) blurAttribute.needsUpdate = true
   })
 
   if (anchors.length === 0) return null
@@ -287,23 +323,55 @@ function ParticleField({ anchors, planeWidth, planeHeight }: { anchors: Anchor[]
       </planeGeometry>
       <shaderMaterial
         depthWrite={false}
-        fragmentShader={particleFragmentShader}
+        fragmentShader={fragmentFragmentShader}
         transparent
-        vertexShader={particleVertexShader}
+        vertexShader={fragmentVertexShader}
       />
     </instancedMesh>
   )
 }
 
+const FAR_BAND: FragmentBandConfig = {
+  zBase: -2.6,
+  zJitter: 0.9,
+  scatterMin: 1.5,
+  scatterMax: 2.8,
+  travelMin: 0.03,
+  travelMax: 0.07,
+  speedMin: 0.015,
+  speedMax: 0.03,
+  sizeMin: 0.024,
+  sizeMax: 0.052,
+  opacityMax: 0.26,
+  blurBias: 0.45,
+  focusRange: 2.2,
+}
+
+const NEAR_BAND: FragmentBandConfig = {
+  zBase: 0.95,
+  zJitter: 0.4,
+  scatterMin: 1.0,
+  scatterMax: 1.35,
+  travelMin: 0.05,
+  travelMax: 0.12,
+  speedMin: 0.02,
+  speedMax: 0.045,
+  sizeMin: 0.012,
+  sizeMax: 0.026,
+  opacityMax: 0.5,
+  blurBias: 0.05,
+  focusRange: 1.6,
+}
+
 function CameraRig() {
   useFrame(({ clock, camera }) => {
     const t = clock.getElapsedTime()
-    const targetX = Math.sin(t * 0.07) * 0.16
-    const targetY = Math.cos(t * 0.055) * 0.1
-    const targetZ = 5 + Math.sin(t * 0.033) * 0.42
-    camera.position.x += (targetX - camera.position.x) * 0.015
-    camera.position.y += (targetY - camera.position.y) * 0.015
-    camera.position.z += (targetZ - camera.position.z) * 0.015
+    const targetX = Math.sin(t * 0.045) * 0.34
+    const targetY = Math.cos(t * 0.035) * 0.2
+    const targetZ = BASE_CAMERA_Z + Math.sin(t * 0.021) * 0.85
+    camera.position.x += (targetX - camera.position.x) * 0.012
+    camera.position.y += (targetY - camera.position.y) * 0.012
+    camera.position.z += (targetZ - camera.position.z) * 0.012
     camera.lookAt(0, 0, 0)
   })
   return null
@@ -314,12 +382,18 @@ function Scene({ url }: { url: string }) {
   const image = texture.image as HTMLImageElement
   const textureAspect = image.width / image.height
   const [planeWidth, planeHeight] = useContainScale(textureAspect)
-  const anchors = useMemo(() => sampleSilhouetteAnchors(image, PARTICLE_COUNT), [image])
+  const anchors = useMemo(
+    () => sampleSilhouetteAnchors(image, FAR_FRAGMENT_COUNT + NEAR_FRAGMENT_COUNT),
+    [image],
+  )
+  const farAnchors = useMemo(() => anchors.slice(0, FAR_FRAGMENT_COUNT), [anchors])
+  const nearAnchors = useMemo(() => anchors.slice(FAR_FRAGMENT_COUNT), [anchors])
 
   return (
     <>
+      <FragmentField anchors={farAnchors} config={FAR_BAND} planeHeight={planeHeight} planeWidth={planeWidth} />
       <MaterialPlane texture={texture} />
-      <ParticleField anchors={anchors} planeHeight={planeHeight} planeWidth={planeWidth} />
+      <FragmentField anchors={nearAnchors} config={NEAR_BAND} planeHeight={planeHeight} planeWidth={planeWidth} />
       <CameraRig />
     </>
   )
@@ -340,7 +414,7 @@ export function HomeMaterialField() {
   return (
     <div className="home-material-field" ref={containerRef}>
       <Canvas
-        camera={{ fov: 22, position: [0, 0, 5] }}
+        camera={{ fov: 34, position: [0, 0, BASE_CAMERA_Z] }}
         dpr={[1, 2]}
         frameloop={active ? 'always' : 'never'}
         gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
