@@ -1,0 +1,9 @@
+.home-material-field { height: 100%; pointer-events: none; width: 100%; }
+
+.home-material-field canvas {
+  display: block;
+  filter: drop-shadow(0 1.4rem 1.7rem rgba(59, 62, 59, 0.18));
+  height: 100% !important;
+  outline: none;
+  width: 100% !important;
+}

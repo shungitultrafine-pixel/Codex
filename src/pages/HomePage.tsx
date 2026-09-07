@@ -1,6 +1,25 @@
+import { useEffect, useState } from 'react'
+import { HomeMaterialField } from '../experience/HomeMaterialField'
 import './home-page.css'
 
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const handleChange = (event: MediaQueryListEvent) => setReduced(event.matches)
+    query.addEventListener('change', handleChange)
+    return () => query.removeEventListener('change', handleChange)
+  }, [])
+
+  return reduced
+}
+
 export function HomePage() {
+  const reducedMotion = usePrefersReducedMotion()
+
   return (
     <section aria-label="MicronHub" className="home-page">
       <div aria-label="Primary navigation" className="home-page__header">
@@ -14,20 +33,8 @@ export function HomePage() {
       </div>
 
       <div aria-hidden="true" className="home-page__material">
-        <div className="home-page__particles">
-          <span className="particle particle--fragment particle--fragment-a" />
-          <span className="particle particle--fragment particle--fragment-b" />
-          <span className="particle particle--medium particle--medium-a" />
-          <span className="particle particle--medium particle--medium-b" />
-          <span className="particle particle--medium particle--medium-c" />
-          <span className="particle particle--dust particle--dust-a" />
-          <span className="particle particle--dust particle--dust-b" />
-          <span className="particle particle--dust particle--dust-c" />
-          <span className="particle particle--dust particle--dust-d" />
-          <span className="particle particle--dust particle--dust-e" />
-        </div>
         <div className="home-page__material-image">
-          <img alt="" src="/assets/home-material.png" />
+          {reducedMotion ? <img alt="" src="/assets/home-material.png" /> : <HomeMaterialField />}
         </div>
       </div>
 
