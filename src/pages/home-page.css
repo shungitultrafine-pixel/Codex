@@ -56,20 +56,6 @@
 .home-page__navigation a { transition: opacity 160ms ease; }
 .home-page__navigation a:hover { opacity: 0.58; }
 
-.home-page__menu {
-  align-items: center;
-  border: 1px solid rgba(38, 40, 40, 0.6);
-  border-radius: 999px;
-  display: grid;
-  height: 1.85rem;
-  justify-content: center;
-  margin-left: clamp(0.2rem, 0.8vw, 1rem);
-  place-content: center;
-  width: 1.85rem;
-}
-
-.home-page__menu i { background: var(--ink); display: block; height: 1px; margin: 2px; width: 0.63rem; }
-
 .home-page__material {
   bottom: 12.5svh;
   left: 35%;
@@ -177,8 +163,20 @@
   right: 13%;
 }
 
-.home-page__applications a { min-width: max-content; padding-bottom: 1rem; position: relative; }
-.home-page__applications a::after { background: currentColor; bottom: 0; content: ''; height: 1px; left: 0; opacity: 0.6; position: absolute; width: 72%; }
+.home-page__application {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: max-content;
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+.home-page__application svg { opacity: 0.85; transition: opacity 160ms ease, transform 160ms ease; }
+.home-page__application:hover svg { opacity: 1; transform: translateY(-2px); }
+
+.home-page__application::after { background: currentColor; bottom: 0; content: ''; height: 1px; left: 0; opacity: 0.6; position: absolute; width: 72%; }
 
 .home-page__scroll { align-items: center; display: flex; flex-direction: column; gap: 0.85rem; right: clamp(1.5rem, 4.45vw, 4.3rem); top: 43%; }
 .home-page__scroll span { background: currentColor; height: 2.25rem; opacity: 0.5; width: 1px; }
