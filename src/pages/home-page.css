@@ -1,18 +1,27 @@
 .home-page {
-  --ink: #25282a;
-  --muted: #5d6263;
+  --ink: #f2efe6;
+  --muted: #97a0a6;
   background:
-    radial-gradient(circle at 58% 42%, rgba(250, 248, 241, 0.95) 0 12%, rgba(238, 236, 230, 0) 40%),
-    radial-gradient(ellipse at 72% 82%, rgba(191, 196, 195, 0.35), transparent 44%),
-    linear-gradient(112deg, #cfd5d5 0%, #e6e4df 45%, #efebe4 100%);
+    radial-gradient(circle at 72% 29%, rgba(255, 200, 135, 0.13) 0%, transparent 40%),
+    linear-gradient(165deg, #030405 0%, #07090c 48%, #0d1116 100%);
   color: var(--ink);
   min-height: 100svh;
   overflow: hidden;
   position: relative;
 }
 
+.home-page__glow {
+  background: radial-gradient(circle at 68% 26%, rgba(255, 197, 138, 0.22) 0%, rgba(255, 197, 138, 0.08) 34%, transparent 62%);
+  inset: -12%;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
 .home-page::after {
-  background: linear-gradient(180deg, transparent 63%, rgba(255, 254, 250, 0.18));
+  background:
+    radial-gradient(circle at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.38) 100%),
+    linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.5) 100%);
   content: '';
   inset: 0;
   pointer-events: none;
@@ -79,7 +88,7 @@
 
 .home-page__material-image img {
   display: block;
-  filter: drop-shadow(0 1.4rem 1.7rem rgba(59, 62, 59, 0.18));
+  filter: drop-shadow(0 1.2rem 2.6rem rgba(0, 0, 0, 0.6)) drop-shadow(0 0 3.2rem rgba(255, 197, 138, 0.16));
   height: 100%;
   max-height: 100%;
   max-width: 100%;
@@ -91,27 +100,27 @@
 
 .particle {
   animation: particle-drift 13s ease-in-out infinite alternate;
-  background: #a9aaa5;
+  background: #c7c2b6;
   border-radius: 50%;
-  box-shadow: 0 0.1rem 0.5rem rgba(91, 92, 86, 0.15);
+  box-shadow: 0 0 0.6rem rgba(255, 235, 210, 0.2);
   opacity: 0.64;
   position: absolute;
   will-change: transform;
 }
 
 .particle--fragment {
-  background: linear-gradient(135deg, #dad9d2, #898b86);
+  background: linear-gradient(135deg, #e7dcc4, #8b93a0);
   border-radius: 42% 58% 63% 37% / 46% 42% 58% 54%;
   opacity: 0.56;
 }
 
 .particle--fragment-a { animation-delay: -5s; height: 1rem; left: 4%; top: 66%; width: 0.78rem; }
 .particle--fragment-b { animation-delay: -9s; height: 0.72rem; right: 2%; top: 32%; width: 0.91rem; }
-.particle--medium { animation-duration: 10s; background: #bfc0ba; height: 0.46rem; width: 0.46rem; }
+.particle--medium { animation-duration: 10s; background: #a7aeb8; height: 0.46rem; width: 0.46rem; }
 .particle--medium-a { animation-delay: -3s; left: 14%; top: 25%; }
 .particle--medium-b { animation-delay: -7s; right: 12%; top: 67%; }
 .particle--medium-c { animation-delay: -1s; right: 22%; top: 12%; }
-.particle--dust { animation-duration: 8s; background: #8f9290; height: 0.18rem; opacity: 0.48; width: 0.18rem; }
+.particle--dust { animation-duration: 8s; background: #cfd2d6; height: 0.18rem; opacity: 0.48; width: 0.18rem; }
 .particle--dust-a { animation-delay: -2s; left: 24%; top: 10%; }
 .particle--dust-b { animation-delay: -6s; left: 8%; top: 43%; }
 .particle--dust-c { animation-delay: -4s; right: 5%; top: 52%; }
@@ -138,12 +147,15 @@
 .home-page__rule { background: var(--ink); display: block; height: 1px; margin-bottom: clamp(1.45rem, 2.4vw, 2.2rem); opacity: 0.72; width: 2.3rem; }
 
 .home-page h1 {
+  color: rgba(242, 239, 230, 0.62);
   font-size: clamp(2.25rem, 3.2vw, 4rem);
   font-weight: 300;
   letter-spacing: 0.095em;
   line-height: 1.14;
   margin: 0;
 }
+
+.home-page__emphasis { color: var(--ink); font-weight: 600; }
 
 .home-page__copy p {
   color: var(--muted);
@@ -177,6 +189,15 @@
 .home-page__application:hover svg { opacity: 1; transform: translateY(-2px); }
 
 .home-page__application::after { background: currentColor; bottom: 0; content: ''; height: 1px; left: 0; opacity: 0.6; position: absolute; width: 72%; }
+
+.home-page__application--water svg { color: #5fd0e4; }
+.home-page__application--water::after { background: #5fd0e4; }
+.home-page__application--rubber svg { color: #7cd192; }
+.home-page__application--rubber::after { background: #7cd192; }
+.home-page__application--ceramics svg { color: #e0b366; }
+.home-page__application--ceramics::after { background: #e0b366; }
+.home-page__application--rare-earth svg { color: #ac8fe6; }
+.home-page__application--rare-earth::after { background: #ac8fe6; }
 
 .home-page__scroll { align-items: center; display: flex; flex-direction: column; gap: 0.85rem; right: clamp(1.5rem, 4.45vw, 4.3rem); top: 43%; }
 .home-page__scroll span { background: currentColor; height: 2.25rem; opacity: 0.5; width: 1px; }

@@ -46,11 +46,11 @@ function SparkIcon() {
 }
 
 const applications = [
-  { icon: DropIcon, label: 'Water' },
-  { icon: LeafIcon, label: 'Rubber' },
-  { icon: HexagonIcon, label: 'Ceramics' },
-  { icon: DotsIcon, label: 'Rare Earth' },
-  { icon: SparkIcon, label: 'Emerging Applications' },
+  { accent: 'water', icon: DropIcon, label: 'Water' },
+  { accent: 'rubber', icon: LeafIcon, label: 'Rubber' },
+  { accent: 'ceramics', icon: HexagonIcon, label: 'Ceramics' },
+  { accent: 'rare-earth', icon: DotsIcon, label: 'Rare Earth' },
+  { accent: 'emerging', icon: SparkIcon, label: 'Emerging Applications' },
 ]
 
 export function HomePage() {
@@ -64,6 +64,8 @@ export function HomePage() {
           <a href="/company">About</a>
         </nav>
       </div>
+
+      <div aria-hidden="true" className="home-page__glow" />
 
       <div aria-hidden="true" className="home-page__material">
         <div className="home-page__particles">
@@ -85,13 +87,13 @@ export function HomePage() {
 
       <div className="home-page__copy">
         <span aria-hidden="true" className="home-page__rule" />
-        <h1>ONE TECHNOLOGY<br />PLATFORM. MANY ENGINEERED<br />OUTCOMES.</h1>
+        <h1><span className="home-page__emphasis">ONE</span> TECHNOLOGY<br />PLATFORM. <span className="home-page__emphasis">MANY</span> ENGINEERED<br />OUTCOMES.</h1>
         <p>We engineer the particle state the next process step requires.</p>
       </div>
 
       <nav aria-label="Applications" className="home-page__applications">
-        {applications.map(({ icon: Icon, label }) => (
-          <Link className="home-page__application" key={label} to="/applications">
+        {applications.map(({ accent, icon: Icon, label }) => (
+          <Link className={`home-page__application home-page__application--${accent}`} key={label} to="/applications">
             <Icon />
             <span>{label}</span>
           </Link>
